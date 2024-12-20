@@ -1,0 +1,444 @@
+<?php
+include 'config.php';
+
+$message = '';
+
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $query = "SELECT * FROM user WHERE id = '$id'";
+    $execut = mysqli_query($conn, $query);
+    $data = mysqli_fetch_assoc($execut);
+}
+
+if ($_SERVER['REQUEST_METHOD'] == "POST") {
+    $fname = $_POST['fname'];
+    $lname = $_POST['lname'];
+    $email = $_POST['email'];
+    $dob_day = $_POST['dob_day'];
+    $dob_month = $_POST['dob_month'];
+    $dob_year = $_POST['dob_year'];
+    $gender = $_POST['gender'];
+    $hobbies = isset($_POST['hobbies']) ? implode(",", $_POST['hobbies']) : '';
+    $address = $_POST['address'];
+    $city = $_POST['city'];
+    $state = $_POST['state'];
+    $zipcode = $_POST['zipcode'];
+    $Profile = $_FILES['profile']['name'];
+    $Profiletemp = $_FILES['profile']['tmp_name'];
+
+    $dob = $dob_year . '-' . $dob_month . '-' . $dob_day;
+
+
+    if ($Profile) {
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+        $fileExtension = pathinfo($Profile, PATHINFO_EXTENSION);
+        $uniqueFilename = time() . '.' . $fileExtension;
+
+        if (!in_array($_FILES['profile']['type'], $allowedTypes)) {
+            $message = "<p style='color: red; text-align: center;'>Invalid profile picture format! Only JPG, PNG, or GIF are allowed.</p>";
+        } else {
+            $uploadPath = './uploads/' . $uniqueFilename;
+            if (!move_uploaded_file($Profiletemp, $uploadPath)) {
+                $message = "<p style='color: red; text-align: center;'>Failed to upload the profile picture.</p>";
+            }
+        }
+    } else {
+        $uniqueFilename = isset($data['profilepic']) ? $data['profilepic'] : ''; // Retain old profile pic
+    }
+
+    if (isset($id)) {
+        $emailQuery = "SELECT email FROM user WHERE email = '$email' AND id != '$id'";
+    } else {
+        $emailQuery = "SELECT email FROM user WHERE email = '$email'";
+    }
+
+    $emailResult = mysqli_query($conn, $emailQuery);
+
+    if (mysqli_num_rows($emailResult) > 0) {
+        $message = "<p style='color: red;'>Email is already registered. Please use a different email.</p>";
+    } else {
+
+        if (isset($id)) {
+            $query = "UPDATE `user` SET `fName`='$fname', `lName`='$lname', `email`='$email', `dob`='$dob', `gender`='$gender', `hobbies`='$hobbies', `address`='$address', `city`='$city', `state`='$state', `zipcode`='$zipcode', `profilepic`='$uniqueFilename' WHERE `id`='$id'";
+            $message = "<p style='color: green; text-align: center;'>Record updated successfully!</p>";
+        } else {
+
+            $query = "INSERT INTO `user`(`fName`, `lName`, `email`, `dob`, `gender`, `hobbies`, `address`, `city`, `state`, `zipcode`, `profilepic`) 
+                      VALUES ('$fname', '$lname', '$email', '$dob', '$gender', '$hobbies', '$address', '$city', '$state', '$zipcode', '$uniqueFilename')";
+            $message = "<p style='color: green; text-align: center;'>User registered successfully!</p>";
+        }
+
+        $execut = mysqli_query($conn, $query);
+        if ($execut) {
+            header("Location: manageusers1.php?message=" . urlencode($message));
+            exit();
+        } else {
+            $message = "<p style='color: red; text-align: center;'>Error in processing your request.</p>";
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Form</title>
+    <style>
+        body {
+            margin: 10px;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .form-container {
+            width: 80%;
+            margin-left: 450px;
+            max-width: 600px;
+            padding: 20px;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .form-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-controler {
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-controler label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-controler input,
+        .form-controler textarea,
+        .form-controler select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .form-controler-dob select {
+            width: 32.8%;
+            justify-content: space-around;
+            margin-bottom: 5px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .form-controler-dob label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-controler input[type="radio"],
+        .form-controler input[type="checkbox"] {
+            width: auto;
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: rgb(28, 116, 184);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .form-container button:hover {
+            background-color: rgb(69, 152, 160);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="form-container">
+        <h2><?php echo isset($id) ? 'Edit Profile' : 'Registration'; ?></h2>
+
+        <form class="container" action="index.php<?php echo isset($data['id']) ? '?id=' . $data['id'] : ''; ?>"
+            method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+
+
+            <div class="form-controler">
+                <label for="fname">First Name:</label>
+                <input type="text" name="fname" id="fname" placeholder="Enter Your First Name"
+                    value="<?php echo isset($data['fname']) ? $data['fname'] : (isset($fname) ? $fname : ''); ?>">
+                <span class="error" id="first_name_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="lname">Last Name:</label>
+                <input type="text" name="lname" id="lname" placeholder="Enter Your Last Name"
+                    value="<?php echo isset($data['lname']) ? $data['lname'] : (isset($lname) ? $lname : ''); ?>">
+                <span class="error" id="last_name_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="email">Email Address:</label>
+                <input type="text" name="email" id="email" placeholder="Enter Your Email Address"
+                    value="<?php echo isset($data['email']) ? $data['email'] : (isset($email) ? $email : ''); ?>">
+
+                <span class="error" id="email_error"> <?php echo isset($message) ? $message : ''; ?></span>
+            </div>
+
+            <div class="form-controler-dob">
+                <label for="dob">Date Of Birth:</label>
+                <select name="dob_day" id="dob_day">
+                    <option value="">Day</option>
+                    <?php for ($i = 1; $i <= 31; $i++) { ?>
+                        <option value="<?php echo $i; ?>" <?php echo isset($data['dob']) && date('d', strtotime($data['dob'])) == $i ? 'selected' : (isset($dob_day) && $dob_day == $i ? 'selected' : ''); ?>>
+                            <?php echo $i; ?>
+                        </option>
+                    <?php } ?>
+                </select>
+
+                <select name="dob_month" id="dob_month">
+                    <option value="">Month</option>
+                    <?php for ($i = 1; $i <= 12; $i++) { ?>
+                        <option value="<?php echo $i; ?>" <?php echo isset($data['dob']) && date('m', strtotime($data['dob'])) == $i ? 'selected' : (isset($dob_month) && $dob_month == $i ? 'selected' : ''); ?>>
+                            <?php echo $i; ?>
+                        </option>
+                    <?php } ?>
+                </select>
+
+                <select name="dob_year" id="dob_year">
+                    <option value="">Year</option>
+                    <?php for ($i = 1970; $i <= 2020; $i++) { ?>
+                        <option value="<?php echo $i; ?>" <?php echo isset($data['dob']) && date('Y', strtotime($data['dob'])) == $i ? 'selected' : (isset($dob_year) && $dob_year == $i ? 'selected' : ''); ?>>
+                            <?php echo $i; ?>
+                        </option>
+                    <?php } ?>
+                </select><br>
+                <span class="error" id="dob_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="gender">Gender:</label>
+                <input type="radio" name="gender" value="0" <?php echo isset($data['gender']) && $data['gender'] == '0' ? 'checked' : (isset($gender) && $gender == '0' ? 'checked' : ''); ?>> Male
+                <input type="radio" name="gender" value="1" <?php echo isset($data['gender']) && $data['gender'] == '1' ? 'checked' : (isset($gender) && $gender == '1' ? 'checked' : ''); ?>> Female
+                <br><span class="error" id="gender_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="hobbies">Hobbies:</label>
+                <input type="checkbox" name="hobbies[]" value="Reading" <?php echo isset($data['hobbies']) && in_array('Reading', explode(',', $data['hobbies'])) ? 'checked' : ''; ?>> Reading
+                <input type="checkbox" name="hobbies[]" value="Writing" <?php echo isset($data['hobbies']) && in_array('Writing', explode(',', $data['hobbies'])) ? 'checked' : ''; ?>> Writing
+                <input type="checkbox" name="hobbies[]" value="Adventure" <?php echo isset($data['hobbies']) && in_array('Adventure', explode(',', $data['hobbies'])) ? 'checked' : ''; ?>> Adventure
+                <input type="checkbox" name="hobbies[]" value="Playing Games" <?php echo isset($data['hobbies']) && in_array('Playing Games', explode(',', $data['hobbies'])) ? 'checked' : ''; ?>> Playing Games
+                <br><span class="error" id="hobbies_error"></span>
+            </div>
+
+
+            <div class="form-controler">
+                <label for="address">Address:</label>
+                <textarea name="address" id="address"
+                    placeholder="Enter Your full Address"><?php echo isset($data['address']) ? $data['address'] : (isset($address) ? $address : ''); ?></textarea>
+                <span class="error" id="address_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="city">City:</label>
+                <select name="city" id="city">
+                    <option value="">Select City</option>
+                    <?php
+                    $cities = ['Rajkot', 'Jamnagar', 'Surat', 'Gandhinagar'];
+                    $selected_city = isset($data['city']) ? $data['city'] : (isset($_POST['city']) ? $_POST['city'] : '');
+
+                    foreach ($cities as $city) {
+                        $selected = ($selected_city == $city) ? 'selected' : '';
+                        echo "<option value=\"$city\" $selected>$city</option>";
+                    }
+                    ?>
+                </select><br>
+                <span class="error" id="city_error"><?php echo isset($city_error) ? $city_error : ''; ?></span>
+            </div>
+            <div class="form-controler">
+                <label for="state">State:</label>
+                <select name="state" id="state">
+                    <option value="">Select State</option>
+                    <?php
+                    $states = ['Gujarat', 'Mumbai', 'UP'];
+                    $selected_state = isset($data['state']) ? $data['state'] : (isset($_POST['state']) ? $_POST['state'] : '');
+
+                    foreach ($states as $state) {
+                        $selected = ($selected_state == $state) ? 'selected' : '';
+                        echo "<option value=\"$state\" $selected>$state</option>";
+                    }
+                    ?>
+                </select><br>
+                <span class="error" id="state_error"><?php echo isset($state_error) ? $state_error : ''; ?></span>
+            </div>
+
+            <div class="form-controler">
+                <label for="zipcode">Zipcode:</label>
+                <input type="text" name="zipcode" id="zipcode" placeholder="Enter Your Zipcode"
+                    value="<?php echo isset($data['zipcode']) ? $data['zipcode'] : (isset($zipcode) ? $zipcode : ''); ?>">
+                <span class="error" id="zipcode_error"></span>
+            </div>
+
+            <div class="form-controler">
+                <?php if (isset($data['profilepic']) && $data['profilepic']): ?>
+                    <img src="./uploads/<?php echo $data['profilepic']; ?>" alt="Profile Picture" width="100"
+                        height="100"><br>
+                <?php endif; ?>
+                <label for="profile">Profile Picture:</label>
+                <input type="file" name="profile" id="profile">
+                <span class="error" id="profile_error"></span>
+            </div>
+
+
+            <button type="submit"><?php echo isset($id) ? 'Update Record' : 'Save Record'; ?></button>
+        </form>
+    </div>
+
+    <script>
+        function validateForm() {
+            let hasErrors = false;
+            document.querySelectorAll('.error').forEach(error => error.textContent = '');
+            document.querySelectorAll('input, select, textarea').forEach(input => input.style.borderColor = '#ccc');
+
+            const fname = document.getElementById('fname').value;
+            const lname = document.getElementById('lname').value;
+            const email = document.getElementById('email').value;
+            const dob_day = document.getElementById('dob_day').value;
+            const dob_month = document.getElementById('dob_month').value;
+            const dob_year = document.getElementById('dob_year').value;
+            const gender = document.querySelector('input[name="gender"]:checked');
+            const address = document.getElementById('address').value;
+            const city = document.getElementById('city').value;
+            const state = document.getElementById('state').value;
+            const zipcode = document.getElementById('zipcode').value;
+            const profile = document.getElementById('profile').value;
+            const hobbies = document.querySelectorAll('input[name="hobbies[]"]:checked');
+            const nameRegex = /^[a-zA-Z\s]+$/;
+
+
+            const emailErrorMessage = document.getElementById('email_error').textContent;
+            if (emailErrorMessage.includes("Email is already registered")) {
+                document.getElementById("email_error").textContent = "This email is already taken. Please use a different email.";
+                document.getElementById("email").style.borderColor = 'red';
+                hasErrors = true;
+            }
+
+
+            if (!fname || !nameRegex.test(fname)) {
+                document.getElementById("first_name_error").textContent = "First Name is required and should not contain special characters.";
+                document.getElementById("fname").style.borderColor = 'red';
+                document.getElementById("fname").focus();
+                hasErrors = true;
+            }
+
+
+            if (!lname || !nameRegex.test(lname)) {
+                document.getElementById("last_name_error").textContent = "Last Name is required and should not contain special characters.";
+                document.getElementById("lname").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("lname").focus();
+                hasErrors = true;
+            }
+
+
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            if (!email || !emailRegex.test(email)) {
+                document.getElementById("email_error").textContent = "Please enter a valid email address.";
+                document.getElementById("email").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("email").focus();
+                hasErrors = true;
+            }
+
+
+            if (!dob_day || !dob_month || !dob_year) {
+                document.getElementById("dob_error").textContent = "Date of Birth is required.";
+                document.getElementById("dob_day").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("dob_day").focus();
+                hasErrors = true;
+            }
+
+
+            if (!gender) {
+                document.getElementById("gender_error").textContent = "Gender is required.";
+                document.querySelectorAll('input[name="gender"]').forEach(radio => radio.style.borderColor = 'red');
+                if (!hasErrors) document.querySelector('input[name="gender"]').focus();
+                hasErrors = true;
+            }
+
+
+            if (!address) {
+                document.getElementById("address_error").textContent = "Address is required.";
+                document.getElementById("address").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("address").focus();
+                hasErrors = true;
+            }
+
+
+            if (!city) {
+                document.getElementById("city_error").textContent = "City is required.";
+                document.getElementById("city").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("city").focus();
+                hasErrors = true;
+            }
+
+
+            if (!state) {
+                document.getElementById("state_error").textContent = "State is required.";
+                document.getElementById("state").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("state").focus();
+                hasErrors = true;
+            }
+
+            if (!zipcode) {
+                document.getElementById("zipcode_error").textContent = "Zipcode is required.";
+                document.getElementById("zipcode").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("zipcode").focus();
+                hasErrors = true;
+            }
+
+            if (hobbies.length === 0) {
+                document.getElementById("hobbies_error").textContent = "At least one hobby is required.";
+                document.querySelectorAll('input[name="hobbies[]"]').forEach(checkbox => checkbox.style.borderColor = 'red');
+                if (!hasErrors) document.querySelector('input[name="hobbies[]"]').focus();
+                hasErrors = true;
+            }
+
+            const imageTypes = /\.(jpg|png|gif)$/i;
+            const existingProfilePic = <?php echo isset($data['profilepic']) ? 'true' : 'false'; ?>;
+            if (!profile && !existingProfilePic) {
+                document.getElementById("profile_error").textContent = "Profile picture is required.";
+                document.getElementById("profile").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("profile").focus();
+                hasErrors = true;
+            } else if (profile && !imageTypes.test(profile)) {
+                document.getElementById("profile_error").textContent = "Profile picture must be in JPG, PNG, or GIF format.";
+                document.getElementById("profile").style.borderColor = 'red';
+                if (!hasErrors) document.getElementById("profile").focus();
+                hasErrors = true;
+            }
+
+            return !hasErrors;
+        }
+    </script>
+
+</body>
+
+</html>

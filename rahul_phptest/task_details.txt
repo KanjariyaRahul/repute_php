@@ -1,0 +1,80 @@
+1. Create page for Add/Edit User Form (create form in HTML Table structure)
+============================
+
+Registration (HEADING in H2)
+
+<<< User registred successfully. >>> (Display Success Message after submit form in "Green" Color)
+
+FirstName (textbox) (Require Field)
+
+LastName  (textbox) (Require Field)
+
+Email address  (textbox) (Require Field)
+
+Date Of Birth ( Dropdown ) (Require Field) (3 select box need to add: days for 1 to 31 option, months for 1 to 12 options and year for 1970 to 2020)
+
+Gender ( Radio button ) Male,Female (Require Field)
+
+Hobbies ( Checkbox ) Reading, Writting, Adventure, Playing Games (Require Field)
+
+Address ( Textarea ) (Require Field)
+
+City (dropdown) (Require Field) 
+
+State (dropdown) (Require Field)
+  
+Zipcode (Textbox) (Require Field)
+
+Profile Picture (File Upload)
+
+=======================================================================================================
+SUBMIT BUTTON. (Validation for JavaScript If field is with empty value)
+=======================================================================================================
+
+
+2. Create page for "Manage Users" (display list in HTML Table structure)
+============================
+Manage users (HEADING in H2)
+
+<<< User updated successfully >>> (Display Success Message after Updated User in Green Color)
+
+=======================================================================================================================
+UserId	Full Name	  Email address	    Profile Picture	        Hobbies			    City and State 		   Actions	 
+
+  1	    Repute Info	  test@test.com		    80 X 80	        Reading,Writting	    Rajkot, Gujarat		Edit | Delete 
+
+=======================================================================================================================
+< Previous                                                                                                       Next >
+
+
+IMPORTANT NOTE:
+============================
+Display success/error message after form heading on add user display "User added successfully", update user  "User updated successfully" and delete user "User deleted successfully".
+============================
+1. Blank validation for all fields
+
+2. Don't use HTML5v alidation.
+
+3. Check for valid email address 
+
+4. Allow only jpg, png and gif file for profile picture
+
+5. Add JavaScript confirmation while deleting userss (when press OK then only delete records)
+
+6. Add Pagination in Manage Users listing. <Previous & Next>
+=======================================================================================
+
+Date : 18-12 
+
+pagination like 
+<< < 1 2 3 ... 4 5 6 ... 7 8 9 > >>
+
+====================================
+20-12 
+
+1. To delete a record from your database and also remove the associated image from the folder.
+
+2. To implement a system where a form's Hobbies field requires at least two hobbies to be checked 
+(and if fewer are selected, show an error), you can use JavaScript for client-side validation before the form is submitted.
+
+3. To perform form validation on the PHP side (server-side) and ensure that all required fields are checked
